@@ -1,0 +1,213 @@
+---
+- hosts: "controllers, workers"
+  # remote_user: ubuntu
+  become: true
+  # become_method: sudo
+  # become_user: root
+  # connection: ssh
+  vars:
+    K8S_MINOR_VER: 1.29
+    K8S_PATCH_VER: 2
+    ISTIO_VERSION: 1.21.0
+
+  tasks:
+    - name: Config modprobe
+      blockinfile:
+        path: "/etc/modules-load.d/containerd.conf"
+        create: true
+        block: |
+          overlay
+          br_netfilter
+
+    - name: Enable modprobe
+      command: |
+        modprobe overlay
+        modprobe br_netfilter
+
+    - name: sysctl params required by setup, params persist across reboots
+      blockinfile:
+        path: "/etc/sysctl.d/99-kubernetes-cri.conf"
+        create: true
+        block: |
+          net.bridge.bridge-nf-call-iptables = 1
+          net.ipv4.ip_forward = 1
+          net.bridge.bridge-nf-call-ip6tables = 1
+
+    - name: Apply sysctl params without reboot
+      command: sysctl --system
+    
+    # Use the Ansible apt module instead
+    # - name: Update the apt package index
+    #   command: apt-get update
+    
+    # - name: Set up the Docker Engine repository
+    #   shell: sudo apt-get install -y ca-certificates curl gnupg lsb-release apt-transport-https
+    - name: Set up the Docker Engine repository
+      apt:
+        name: "{{ packages }}"
+        state: present
+        update_cache: yes
+      vars:
+        packages:
+        - ca-certificates
+        - curl
+        - gnupg
+        - lsb-release
+        - apt-transport-https
+
+    # Use the Ansible apt_key module instead
+    # - name: Add Docker's official GPG key directory
+    #   file:
+    #     path: /etc/apt/keyrings
+    #     state: directory
+    #     mode: 0755
+
+    # - name: Add Docker’s official GPG
+    #   shell: curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+    #   args:
+    #     creates: /etc/apt/keyrings/docker.gpg
+    - name: Add Docker's Apt signing/GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    # Will use Ansible's apt_repository module instead
+    # - name: Set up the Docker repository
+    #   shell: |
+    #     echo \
+    #     "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+    #     $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    #     apt-get update
+    - name: Get ARCH
+      shell:
+        cmd: "echo $(dpkg --print-architecture)"
+      register: arch_result
+    - name: Get Release
+      shell:
+        cmd: "echo $(lsb_release -cs)"
+      register: release_result
+    - name: Set up the Docker repository
+      apt_repository:
+        repo: deb [arch={{ arch_result.stdout }}] https://download.docker.com/linux/ubuntu {{release_result.stdout}} stable
+        state: present
+
+    # Will use the Ansible Apt module instead
+    # Get latest versions of docker by running this on a linux hosts:
+    # apt-cache madison docker-ce
+    # - name: Install Docker Engine, containerd, and Docker Compose
+    #   shell: |
+    #     VERSION_STRING=5:24.0.7-1~ubuntu.20.04~focal
+    #     apt-get install -y docker-ce=$VERSION_STRING docker-ce-cli=$VERSION_STRING containerd.io docker-buildx-plugin docker-compose-plugin
+    - name: Install Docker Engine, containerd, and Docker Compose
+      apt:
+        name: "{{ packages }}"
+        state: present
+        update_cache: yes
+      vars:
+        VERSION_STRING: 5:24.0.7-1~ubuntu.20.04~focal
+        packages:
+        - docker-ce={{ VERSION_STRING }}
+        - docker-ce-cli={{ VERSION_STRING }}
+        - containerd.io
+        - docker-buildx-plugin
+        - docker-compose-plugin
+
+    # Use Ansible user module instead
+    # - name: Add user (ubuntu) to the docker group
+    #   command: usermod -aG docker $USER
+    - name: Add user (ubuntu) to the docker group
+      user:
+        name: ubuntu
+        group: docker
+
+    - name: Make sure that 'disabled_plugins' is commented out in your config.toml file
+      shell: sed -i 's/disabled_plugins/#disabled_plugins/' /etc/containerd/config.toml
+
+    - name: Restart containerd
+      command: systemctl restart containerd
+
+    - name: disable swap
+      shell: sudo swapoff -a
+
+    # Use Ansible module instead
+    # - name: Add k8s gpg key
+    #   shell: curl -fsSL https://pkgs.k8s.io/core:/stable:/v{{ K8S_MINOR_VER }}/deb/Release.key | sudo apt-key add -
+    - name: Add k8s GPG key
+      apt_key:
+        url: https://pkgs.k8s.io/core:/stable:/v{{ K8S_MINOR_VER }}/deb/Release.key
+        state: present
+
+    # Use Ansible module instead
+    # - name: Add K8s Source
+    #   blockinfile:
+    #     path: "/etc/apt/sources.list.d/kubernetes.list"
+    #     create: true
+    #     block: |
+    #       deb https://pkgs.k8s.io/core:/stable:/v{{ K8S_MINOR_VER }}/deb/ /
+    - name: Set up the k8s repository
+      apt_repository:
+        repo: deb [arch={{ arch_result.stdout }}] https://pkgs.k8s.io/core:/stable:/v{{ K8S_MINOR_VER }}/deb/ /
+        state: present
+
+    # To see possible versions:
+    # curl -s https://packages.cloud.google.com/apt/dists/kubernetes-xenial/main/binary-amd64/Packages | grep Version | awk '{print $2}' | grep 1.27
+    # Use Ansible module instead
+    # - name: Install Kubernetes
+    #   shell: |
+    #     apt-get update
+    #     apt-get install -y kubelet={{ K8S_MINOR_VER }}.{{ K8S_PATCH_VER }}-1.1 kubeadm={{ K8S_MINOR_VER }}.{{ K8S_PATCH_VER }}-1.1 kubectl={{ K8S_MINOR_VER }}.{{ K8S_PATCH_VER }}-1.1
+    #     apt-mark hold kubelet kubeadm kubectl
+    - name: Install Kubernetes
+      apt:
+        name: "{{ packages }}"
+        state: present
+        update_cache: yes
+      vars:
+        packages:
+        - kubelet={{ K8S_MINOR_VER }}.{{ K8S_PATCH_VER }}-1.1
+        - kubeadm={{ K8S_MINOR_VER }}.{{ K8S_PATCH_VER }}-1.1
+        - kubectl={{ K8S_MINOR_VER }}.{{ K8S_PATCH_VER }}-1.1
+
+    - name: Install bash completion
+      apt:
+        name: bash-completion
+        state: present
+        update_cache: yes
+    
+    # Use Ansible module instead
+    # - name: Install Helm
+    #   shell: |
+    #     curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
+    #     echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
+    #     sudo apt-get update
+    #     apt-get install -y helm
+    - name: Get Helm GPG key
+      apt_key:
+        url: https://baltocdn.com/helm/signing.asc
+        state: present
+    - name: Get Helm repository
+      apt_repository:
+        repo: deb [arch={{ arch_result.stdout }}] https://baltocdn.com/helm/stable/debian/ all main
+        state: present
+    - name: Install Helm
+      apt:
+        name: helm
+        state: present
+        update_cache: yes
+
+    - name: Install Istio
+      become_user: ubuntu
+      shell: |
+        curl -L https://istio.io/downloadIstio | ISTIO_VERSION={{ ISTIO_VERSION }} TARGET_ARCH=x86_64 sh -
+
+    # Note the path added is based on the istio version installed above
+    - name: Enable istioctl in path and add kubectl/istioctl/helm completion
+      blockinfile:
+        path: "/home/ubuntu/.bashrc"
+        block: |
+          source <(kubectl completion bash)
+          source <(helm completion bash)
+          export PATH=/home/ubuntu/istio-{{ ISTIO_VERSION }}/bin:$PATH
+          source <(istioctl completion bash)
+          alias k=kubectl
+          complete -o default -F __start_kubectl k

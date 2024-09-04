@@ -6,3 +6,7 @@ This repo is meant to be code and notes for full stack development of a microser
 - Istio - Service mesh config
 
 There will be a folder for each section above.
+
+# Environment
+The README docs assume a Mac or Linux environment depending on whether the tool is being ran on a PC/laptop (Mac) or on a public cloud host (Linux).
+

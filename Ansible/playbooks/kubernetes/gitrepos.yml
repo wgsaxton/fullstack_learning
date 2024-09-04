@@ -1,0 +1,19 @@
+# Copy the code/repos to the CP node to run on the cluseter
+# This is not part of building a k8s cluster. Usually just instructor repos to clone.
+- hosts: controllers
+  become: true
+  become_user: ubuntu
+  tasks:
+    - name: Createa a git repos directory
+      file:
+        path: $HOME/gitrepos
+        state: directory
+        mode: 0755
+
+    # List out the instructor repos to clone here 
+    - name: Clone git repo Course_Kubernetes_Deep_Dive_NP
+      git:
+        repo: https://github.com/ACloudGuru-Resources/Course_Kubernetes_Deep_Dive_NP.git
+        dest: $HOME/gitrepos/Course_Kubernetes_Deep_Dive_NP
+
+      

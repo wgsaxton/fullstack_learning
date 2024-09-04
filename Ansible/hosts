@@ -1,0 +1,8 @@
+# Put the IPs in the shell's env vars
+[controllers]
+control1 ansible_host="{{ lookup('env','control1') }}"
+
+[workers]
+worker1 ansible_host="{{ lookup('env','worker1') }}"
+worker2 ansible_host="{{ lookup('env','worker2') }}"
+worker3 ansible_host="{{ lookup('env','worker3') }}"

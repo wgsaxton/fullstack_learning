@@ -1,0 +1,10 @@
+- name: Setup users and DNS 
+  import_playbook: users.yml
+- name: Install k8s on all hosts
+  import_playbook: install-k8s.yml
+- name: Setup control plane node 
+  import_playbook: control.yml
+- name: Have workers join the cluster
+  import_playbook: join-workers.yml
+  
+  

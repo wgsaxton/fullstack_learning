@@ -1,0 +1,45 @@
+- hosts: controllers
+  become: true
+  become_user: ubuntu
+  vars:
+    K8S_VER: 1.29.2
+
+  tasks:
+    - name: initialize the cluster
+      shell: sudo kubeadm init --pod-network-cidr=192.168.0.0/16 --kubernetes-version {{ K8S_VER }} > cluster_initialized.txt
+      args:
+        chdir: $HOME
+        creates: cluster_initialized.txt
+
+    - name: create .kube directory
+      file:
+        path: $HOME/.kube
+        state: directory
+        mode: 0755
+
+    # done this way to be able to read the file
+    - name: copies admin.conf to user's kube config
+      become_user: root
+      copy:
+        src: /etc/kubernetes/admin.conf
+        dest: /home/ubuntu/.kube/config
+        remote_src: yes
+        owner: ubuntu
+        group: ubuntu
+
+    # ran without sudo since the config file is in the ubuntu user's home directory
+    - name: install Pod network
+      shell: kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/calico.yaml
+
+    - name: Get the token for joining the worker nodes
+      shell: sudo kubeadm token create --print-join-command
+      register: kubernetes_join_command
+
+    - name: Print join command
+      debug:
+        msg: "{{ kubernetes_join_command.stdout }}"
+        # msg: "{{ kubernetes_join_command.stdout_lines[0] }}"
+
+    - name: Copy join command to local file.
+      become: false
+      local_action: copy content="{{ kubernetes_join_command.stdout_lines[0] }}" dest=/tmp/kubernetes_join_command mode=0777

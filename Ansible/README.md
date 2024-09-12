@@ -41,7 +41,7 @@ pip install ansible==10.3.0
 See the Terraform README.md for how to add these VARs
 
 ## Creating the K8s cluster and tools
-The Ansible playbooks show all the commands that will be ran on the hosts.
+The Ansible playbooks show all the commands that will be ran on the hosts. So learn ansible if you want to know how the K8s cluster is created. 😉
 
 **All commands below will assume they are ran from this folder** since the `ansible.cfg` and `hosts` file is in this folder.
 
@@ -54,3 +54,13 @@ Install K8s
 ansible-playbook -i hosts playbooks/kubernetes/main_playbook.yml
 ```
 Carefull when needing to run the playbooks more than once. I tried to make Ansible detect when something was already done so it would skip, but not everything works out that well.
+
+Moved a lot of installs from shell commands to ansible modules like `apt`, `apt-key`, etc to allow for ansible to detect the install. Let the old shell commands in as a comment for comparison.
+
+## Access via Control Host
+The control host has kubectl and other tools installed on it and configured to interact with the K8s cluster.
+
+Log into the hosts using env var values
+```
+ssh -i ~/.ssh/id_rsa ubuntu@$control1
+```

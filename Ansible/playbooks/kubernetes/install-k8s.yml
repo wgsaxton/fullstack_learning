@@ -8,7 +8,7 @@
   vars:
     K8S_MINOR_VER: 1.29
     K8S_PATCH_VER: 2
-    ISTIO_VERSION: 1.21.0
+    ISTIO_VERSION: 1.21.1
 
   tasks:
     - name: Config modprobe
@@ -168,11 +168,18 @@
         - kubeadm={{ K8S_MINOR_VER }}.{{ K8S_PATCH_VER }}-1.1
         - kubectl={{ K8S_MINOR_VER }}.{{ K8S_PATCH_VER }}-1.1
 
-    - name: Install bash completion
+    # Ensure certain general packages are on the hosts
+    # The packages here don't seem to be on the AWS AMIs
+    - name: Install General Packages
       apt:
-        name: bash-completion
+        name: "{{ packages }}"
         state: present
         update_cache: yes
+      vars:
+        packages:
+        - bash-completion
+        - make
+        - jq
     
     # Use Ansible module instead
     # - name: Install Helm

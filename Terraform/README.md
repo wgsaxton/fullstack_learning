@@ -61,7 +61,7 @@ Terraform also outputs the command to format the info in a way that adds the hos
 
 **Ansible needs these VARs in your shell to access the hosts.**
 
-Example: Copy the `export` commands and paste them into the shell Ansible will use.
+Example: Copy the `export` commands and paste them into the shell Ansible will use. Install `jq` if needed. (`brew install jq`)
 ```
 ❯ terraform output -json servers_output | jq -r '.[0,1,2,3]'
 export control1='54.172.108.66'

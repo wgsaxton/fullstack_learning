@@ -13,6 +13,9 @@ remote_user=ubuntu
 host_key_checking=False
 ``` 
 
+## Update the kube user authorized key
+Update the `with_file` attribute in the `Ansible/playbooks/kubernetes/users.yml` file to the public key of the public key pair above. This will make accessing the `kube` user easier.
+
 ## Install pyenv and python version and create a VirtualEnv
 Install pyenv
 ```

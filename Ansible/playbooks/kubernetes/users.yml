@@ -14,7 +14,8 @@
         dest: /etc/sudoers
         line: "kube ALL=(ALL) NOPASSWD: ALL"
         validate: "visudo -cf %s"
-
+    # Use of {{item}} below
+    # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/items_lookup.html
     - name: set up authorized keys for the kube user
       authorized_key: user=kube key="{{item}}"
       with_file:

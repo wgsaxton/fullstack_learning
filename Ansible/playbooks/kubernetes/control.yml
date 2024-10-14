@@ -6,7 +6,9 @@
 
   tasks:
     - name: initialize the cluster
-      shell: sudo kubeadm init --pod-network-cidr=192.168.0.0/16 --kubernetes-version {{ K8S_VER }} > cluster_initialized.txt
+      shell: |
+        sudo kubeadm init --pod-network-cidr=192.168.0.0/16 --kubernetes-version {{ K8S_VER }} \
+        --apiserver-cert-extra-sans={{ lookup('ansible.builtin.env', 'control1') }}> cluster_initialized.txt
       args:
         chdir: $HOME
         creates: cluster_initialized.txt

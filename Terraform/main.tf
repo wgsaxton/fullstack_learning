@@ -110,6 +110,14 @@ resource "aws_security_group" "k8s_sg" {
     cidr_blocks = ["${chomp(data.http.my_public_ip.response_body)}/32"]
   }
 
+  # Allow kubectl access to the k8s API server
+  ingress {
+    from_port   = 6443
+    to_port     = 6443
+    protocol    = "tcp"
+    cidr_blocks = ["${chomp(data.http.my_public_ip.response_body)}/32"]
+  }
+
   # outbound internet access
   egress {
     from_port   = 0

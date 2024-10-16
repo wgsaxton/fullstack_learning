@@ -43,6 +43,12 @@ pip install ansible==10.3.0
 ## Add host VARs to the shell
 See the Terraform README.md for how to add these VARs
 
+## Update the ansible.cfg file
+Update the ansible.cfg file line with `private_key_file=` with the location of your private key
+
+## Update the users.yml file
+Update the users.yml file section "set up authorized keys for the kube user" with the location of your public key
+
 ## Creating the K8s cluster and tools
 The Ansible playbooks show all the commands that will be ran on the hosts. So learn ansible if you want to know how the K8s cluster is created. 😉
 
@@ -66,4 +72,6 @@ The control host has kubectl and other tools installed on it and configured to i
 Log into the hosts using env var values
 ```
 ssh -i ~/.ssh/id_rsa ubuntu@$control1
+or
+ssh -i ~/.ssh/id_ed25519 ubuntu@$control1
 ```

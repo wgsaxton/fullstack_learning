@@ -8,7 +8,7 @@
   vars:
     K8S_MINOR_VER: 1.29
     K8S_PATCH_VER: 2
-    ISTIO_VERSION: 1.21.1
+    ISTIO_VERSION: 1.23.2
 
   tasks:
     - name: Config modprobe

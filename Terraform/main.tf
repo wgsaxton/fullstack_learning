@@ -71,7 +71,7 @@ resource "aws_security_group" "k8s_sg" {
   name   = "k8s_sg"
   vpc_id = aws_vpc.k8s_vpc.id
 
-  # inbound SSH only from my IP and VPC
+  # inbound SSH only from my IP and  hosts in the VPC
   ingress {
     from_port   = 22
     to_port     = 22
@@ -102,7 +102,7 @@ resource "aws_security_group" "k8s_sg" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-
+  # allow k8s ingress gateways
   ingress {
     from_port   = 30000
     to_port     = 32767

@@ -11,6 +11,7 @@
     ISTIO_VERSION: 1.23.2
 
   tasks:
+    # Add kernel modules to the hosts
     - name: Config modprobe
       blockinfile:
         path: "/etc/modules-load.d/containerd.conf"
@@ -121,13 +122,15 @@
         group: docker
 
     - name: Make sure that 'disabled_plugins' is commented out in your config.toml file
-      shell: sed -i 's/disabled_plugins/#disabled_plugins/' /etc/containerd/config.toml
+      command: sed -i 's/disabled_plugins/#disabled_plugins/' /etc/containerd/config.toml
 
     - name: Restart containerd
       command: systemctl restart containerd
 
     - name: disable swap
-      shell: sudo swapoff -a
+      # shell: sudo swapoff -a
+      # "command" is safer and "become: true" already enabled above
+      command: swapoff -a
 
     # Use Ansible module instead
     # - name: Add k8s gpg key

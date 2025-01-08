@@ -9,19 +9,21 @@
         createhome: yes
         shell: /bin/bash
 
-    - name: allow 'kube' to use sudo without needing a password
+    - name: allow 'kube' user to use sudo without needing a password
       lineinfile:
         dest: /etc/sudoers
         line: "kube ALL=(ALL) NOPASSWD: ALL"
         validate: "visudo -cf %s"
+    
     # Use of {{item}} below
     # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/items_lookup.html
+    # `with_file` contents of file needs to be added as the `key` value
     - name: set up authorized keys for the kube user
-      authorized_key: user=kube key="{{item}}"
+      authorized_key: user=kube key="{{ item }}"
       with_file:
         - ~/.ssh/id_rsa.pub
 
-    - name: Set hostnames
+    - name: Set hostnames for each host
       hostname:
         name: "{{ inventory_hostname }}"
 
@@ -29,7 +31,7 @@
       lineinfile:
         dest: /etc/hosts
         regexp: ".*{{ item }}$"
-        line: "{{ hostvars[item].ansible_host }} {{item}}"
+        line: "{{ hostvars[item].ansible_host }} {{ item }}"
         state: present
       when: hostvars[item].ansible_host is defined
       with_items: "{{ groups.all }}"

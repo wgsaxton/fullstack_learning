@@ -10,7 +10,9 @@
         sudo kubeadm init --pod-network-cidr=192.168.0.0/16 --kubernetes-version {{ K8S_VER }} \
         --apiserver-cert-extra-sans={{ lookup('ansible.builtin.env', 'control1') }}> cluster_initialized.txt
       args:
+        # Puts the txt file in the user's home dir
         chdir: $HOME
+        # This task will be skipped if this file exists
         creates: cluster_initialized.txt
 
     - name: create .kube directory
@@ -19,7 +21,7 @@
         state: directory
         mode: 0755
 
-    # done this way to be able to read the file
+    # Done this way to be able to read the file
     - name: copies admin.conf to user's kube config
       become_user: root
       copy:
@@ -28,15 +30,18 @@
         remote_src: yes
         owner: ubuntu
         group: ubuntu
+        mode: '0600'
 
-    # ran without sudo since the config file is in the ubuntu user's home directory
+    # Ran without sudo since the config file is in the ubuntu user's home directory
     - name: install Pod network
       shell: kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/calico.yaml
 
     - name: Get the token for joining the worker nodes
       shell: sudo kubeadm token create --print-join-command
+      # Saving the output to a var for later
       register: kubernetes_join_command
 
+    # Make sure the join cmd looks correct
     - name: Print join command
       debug:
         msg: "{{ kubernetes_join_command.stdout }}"
@@ -44,4 +49,5 @@
 
     - name: Copy join command to local file.
       become: false
+      # copies to laptop's local directory. Used later for the worker nodes. Make sure it can be read
       local_action: copy content="{{ kubernetes_join_command.stdout_lines[0] }}" dest=/tmp/kubernetes_join_command mode=0777
